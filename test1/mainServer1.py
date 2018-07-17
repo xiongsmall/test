@@ -171,7 +171,7 @@ class MainApplication(web.Application):
             #sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDTIMEO, struct.pack('i', 0))
             for i in range(16,0,-1):
                 try:
-                    # 最大缓存容量为什么是7？
+               
                     sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, struct.pack('i', i * 1024 * 1024))
                     print('server sock.SO_RCVBUF: %dM' %(i))
                     print(sock)
