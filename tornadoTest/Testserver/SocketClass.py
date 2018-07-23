@@ -1,7 +1,7 @@
 # coding: utf-8
-import socket,select,os,Queue,traceback,time,sys,imp,re
+import socket,select,os,Queue,traceback,sys,imp,re
 from socket import socket,AF_INET,SOCK_STREAM,SOL_SOCKET,SO_REUSEADDR
-
+from threading import Thread
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
@@ -25,7 +25,7 @@ class Myserver(object):
         self.times = {}
 
     def senddata(self,sock,ret):
-        # sock.sendall(ret)
+        sock.sendall(ret)
         self.client.pop(sock.fileno())
         self.event.delFdEvent(sock.fileno(),1|2)
         sock.close()
@@ -49,7 +49,6 @@ class Myserver(object):
         return srvId
 
     def getdata(self,package):
-        print(package)
         datalines = package.splitlines()
         Index = None
         for index, str in enumerate(datalines):
@@ -74,8 +73,8 @@ class Myserver(object):
         if self.servers.has_key(srvId):
             serverInfo = self.servers[srvId]
             serverInfo.onRead = processor.onRead
-            serverInfo.onconn = processor.onConn
-            serverInfo.onClose = processor.onClose
+            # serverInfo.onconn = processor.onConn
+            # serverInfo.onClose = processor.onClose
             return 0
         else:
             return -1
@@ -99,7 +98,6 @@ class Myserver(object):
 
 
     def onTcpRead(self, fd, data):
-
         clientInfo = self.client[fd]
         serverInfo = self.servers[clientInfo.srvId]
 
@@ -124,21 +122,20 @@ class Myserver(object):
             self.close(clientInfo.obj)
         except:
             traceback.print_exc()
-    #
-    # def fork(self, num):
-    #     exit = 0
-    #     for i in range(num):
-    #         pid = os.fork()
-    #         if pid > 0:
-    #             if i == (num - 1):
-    #                 while 1:
-    #                     info = os.wait()
-    #                     print 'process', info[0], "exit"
-    #                     exit += 1
-    #                     if exit == num:
-    #                         break
-    #         else:
-    #             self.startser()
+
+    def fork(self, num):
+        exit = 0
+        for i in range(num):
+            pid = os.fork()
+            if pid > 0:
+                if i == (num - 1):
+                    while 1:
+                        info = os.wait()
+                        exit += 1
+                        if exit == num:
+                            break
+            else:
+                self.startser()
 
     def startser(self):
         if self.event is None:
@@ -150,7 +147,6 @@ class Myserver(object):
 
 
     def close(self, sock):
-
         self.client.pop(sock.fileno())
         self.event.delFdEvent(sock.fileno(), 1 | 2)
         sock.close()
@@ -209,6 +205,9 @@ class Newevent(object):
                             self.MsgQueue.task_done()
                         else:
                             if self.fd[epollEvent[0]].onRead:
+                                # Thread(target=self.fd[epollEvent[0]].onRead,args=(epollEvent[0], self.fd[epollEvent[0]].rdata)).start()
+                                # print(self.fd[epollEvent[0]].onRead)
+                                # time.sleep(2)
                                 self.fd[epollEvent[0]].onRead(epollEvent[0], self.fd[epollEvent[0]].rdata)
                     if (epollEvent[1] & select.EPOLLOUT):
                         if self.fd[epollEvent[0]].onWrite:
@@ -271,27 +270,20 @@ class WebServer(Myserver):
         if method.group(1) == 'POST':
             model = re.search(r'model=(.*)? ',package).group(1)
             if model in MODELS.keys():
-                # 此處向下如何實現單獨執行
-                # time.sleep(10)
                 data = self.getdata(package)
                 # data = [[0.966780, '0', '1', '6', '湖北省', '武汉', 7.0, 0.0, 0.0, 0, 0, 5],
                 #  [0.966780, '0', '1', '6', '湖北省', '武汉', 7.0, 0.0, 0.0, 0, 0, 5],
                 #  [0.966780, '0', '1', '6', '湖北省', '武汉', 7.0, 0.0, 0.0, 1, 0, 5]]
-                # ret = self.runmodel(model,data)
+                ret = self.runmodel(model,data)
+                print(ret)
                 Myserver.newcls().senddata(sock, '1')
             else:
                 sock.close()
             # data = re.search(r'\n\n([\s\S]*)',package,re.S).group(1)
         elif method.group(1) == 'GET':
             pass
-        # Myserver.newcls().senddata(sock,data1)
+            # Myserver.newcls().senddata(sock,'1')
 
-    def onConn(self):
-        print('nnnnn')
-        pass
-    def onClose(self):
-        print('lllll')
-        pass
     # def onError(self):
     #     print('eeeee')
     #     pass
@@ -323,7 +315,8 @@ class LoadModel(object):
 
 if __name__ == '__main__':
     LoadModel().load_model()
-    srverid = Myserver.newcls().startSrv('0.0.0.0',9999)
+    srverid = Myserver.newcls().startSrv('0.0.0.0',9998)
     Myserver.newcls().setpro(srverid,WebServer.newcls())
-    Myserver.newcls().start()
+    # Myserver.newcls().start()
+    Myserver.newcls().fork(4)
 

@@ -1,5 +1,4 @@
 # coding: utf-8
-
 str = '''
 POST /Finup HTTP/1.0
 Content-length: 247
@@ -20,16 +19,17 @@ print('data1:',data1)
 data2 = re.search(r'.* (/.*) ',str)
 print('data2:',data2.group(1))
 
-items = '''[[0.966780, '0', '1', '6', '湖北省', '武汉', 7.0, 0.0, 0.0, 0, 0, 5],
-         [0.966780, '0', '1', '6', '湖北省', '武汉', 7.0, 0.0, 0.0, 0, 0, 5],
-         [0.966780, '0', '1', '6', '湖北省', '武汉', 7.0, 0.0, 0.0, 1, 0, 5]]'''
-item = list(items)
-print(type(item))
+# items = '''[[0.966780, '0', '1', '6', '湖北省', '武汉', 7.0, 0.0, 0.0, 0, 0, 5],
+#          [0.966780, '0', '1', '6', '湖北省', '武汉', 7.0, 0.0, 0.0, 0, 0, 5],
+#          [0.966780, '0', '1', '6', '湖北省', '武汉', 7.0, 0.0, 0.0, 1, 0, 5]]'''
+# item = list(items)
+# print(type(item))
 
 
 import threadpool
 def getdata(str):
     datalines = str.splitlines()
+    print(7777)
     Index = None
     for index, str in enumerate(datalines):
         if not str:
@@ -41,13 +41,18 @@ def getdata(str):
     else:
         return data
 
+
+from threading import Thread
+Thread(target=getdata,args=(str,))
 def thread_way():
     pool = threadpool.ThreadPool(2)
     somereq = threadpool.makeRequests(getdata,[str])
     for req in somereq:
-        pool.putRequest(req)
-    aaa = pool.wait()
-    print(aaa)
+        aaa = pool.putRequest(req)
+        print(aaa)
+    pool.wait()
 
-thread_way()
+# thread_way()
+
+
 
